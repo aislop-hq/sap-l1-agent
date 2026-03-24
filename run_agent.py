@@ -5,6 +5,9 @@ Usage:
 
 Demo mode:
     DEMO_MODE=true python run_agent.py --host mock --sid DEV --nr 00 --alert "WP02 not responding"
+
+Scenario shortcut:
+    DEMO_MODE=true python run_agent.py --scenario 1
 """
 
 from __future__ import annotations
@@ -23,14 +26,36 @@ from tools.ssh_tools import set_scenario
 
 console = Console()
 
+DEMO_SCENARIOS = {
+    "1": {"host": "mock", "sid": "DEV", "nr": "00", "alert": "WP02 not responding"},
+    "2": {"host": "mock", "sid": "DEV", "nr": "00", "alert": "filesystem critical on sap-dev-01"},
+    "3": {"host": "mock", "sid": "DEV", "nr": "00", "alert": "TIME_OUT dump in dev_w0"},
+    "4": {"host": "mock", "sid": "DEV", "nr": "00", "alert": "instance not responding"},
+}
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="SAP Basis L1 Support Agent")
-    parser.add_argument("--host", required=True, help="SAP host to diagnose")
-    parser.add_argument("--sid", required=True, help="SAP System ID")
+    parser.add_argument("--host", help="SAP host to diagnose")
+    parser.add_argument("--sid", help="SAP System ID")
     parser.add_argument("--nr", default="00", help="SAP instance number (default: 00)")
-    parser.add_argument("--alert", required=True, help="Alert description")
+    parser.add_argument("--alert", help="Alert description")
+    parser.add_argument(
+        "--scenario", choices=["1", "2", "3", "4"],
+        help="Demo scenario shortcut (1=Hung WP, 2=Filesystem, 3=ABAP Dump, 4=Instance Down)",
+    )
     args = parser.parse_args()
+
+    # Resolve scenario shortcut
+    if args.scenario:
+        s = DEMO_SCENARIOS[args.scenario]
+        args.host = args.host or s["host"]
+        args.sid = args.sid or s["sid"]
+        args.nr = args.nr if args.nr != "00" else s["nr"]
+        args.alert = args.alert or s["alert"]
+
+    if not args.host or not args.sid or not args.alert:
+        parser.error("--host, --sid, and --alert are required (or use --scenario)")
 
     # Configure logging
     logging.basicConfig(
