@@ -1,0 +1,95 @@
+#!/bin/bash
+# Mock sapcontrol — returns scenario-specific output based on SAP_SCENARIO env var.
+# Usage: sapcontrol -nr 00 -function GetProcessList
+
+SCENARIO="${SAP_SCENARIO:-1}"
+
+# Parse args
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -nr) NR="$2"; shift 2 ;;
+        -function) FUNC="$2"; shift 2 ;;
+        *) shift ;;
+    esac
+done
+
+case "$FUNC" in
+
+# ── GetProcessList ──────────────────────────────────────────────────────
+GetProcessList)
+    if [[ "$SCENARIO" == "4" ]]; then
+        cat <<'EOF'
+name, description, dispstatus, textstatus, starttime, elapsedtime, pid
+disp+work, Dispatcher, GRAY, Stopped, , ,
+igswd_mt, IGS Watchdog, GRAY, Stopped, , ,
+gwrd, Gateway, GRAY, Stopped, , ,
+EOF
+    else
+        cat <<'EOF'
+name, description, dispstatus, textstatus, starttime, elapsedtime, pid
+disp+work, Dispatcher, GREEN, Running, 2026-03-24 06:00:00, 18:00:00, 12500
+igswd_mt, IGS Watchdog, GREEN, Running, 2026-03-24 06:00:00, 18:00:00, 12510
+gwrd, Gateway, GREEN, Running, 2026-03-24 06:00:00, 18:00:00, 12520
+EOF
+    fi
+    ;;
+
+# ── ABAPGetWPTable ──────────────────────────────────────────────────────
+ABAPGetWPTable)
+    case "$SCENARIO" in
+    1)
+        cat <<'EOF'
+No, Typ, Pid,    Status,  Reason, Start,         Err, Sem, Cpu, Time, Program, Client, User, Action, Table
+0,  DIA, 12501,  Run,     ,       2026-03-24,    ,    ,    120, 5,    SAPMSSY1, 001, DDIC, ,
+1,  DIA, 12502,  Run,     ,       2026-03-24,    ,    ,    80,  3,    SAPMSSY1, 001, DDIC, ,
+2,  DIA, 12503,  STOPPED, SIGSEGV,2026-03-24,    X,   ,    0,   0,    Z_CUSTOM_FM, 001, ZUSER, ,
+3,  BTC, 12504,  Wait,    ,       2026-03-24,    ,    ,    10,  0,    , , , ,
+EOF
+        ;;
+    3)
+        cat <<'EOF'
+No, Typ, Pid,    Status, Reason,   Start,         Err, Sem, Cpu, Time, Program, Client, User, Action, Table
+0,  DIA, 12501,  Run,    TIME_OUT, 2026-03-24,    X,   ,    600, 600,  ZREPORT_HEAVY, 001, ZBATCHUSER, ,
+1,  DIA, 12502,  Run,    ,         2026-03-24,    ,    ,    80,  3,    SAPMSSY1, 001, DDIC, ,
+EOF
+        ;;
+    *)
+        cat <<'EOF'
+No, Typ, Pid,    Status, Reason, Start,         Err, Sem, Cpu, Time, Program, Client, User, Action, Table
+0,  DIA, 12501,  Run,    ,       2026-03-24,    ,    ,    100, 5,    SAPMSSY1, 001, DDIC, ,
+1,  DIA, 12502,  Run,    ,       2026-03-24,    ,    ,    80,  3,    SAPMSSY1, 001, DDIC, ,
+EOF
+        ;;
+    esac
+    ;;
+
+# ── GetSystemInstanceList ───────────────────────────────────────────────
+GetSystemInstanceList)
+    if [[ "$SCENARIO" == "4" ]]; then
+        cat <<'EOF'
+hostname, instanceNr, httpPort, httpsPort, startPriority, features, dispstatus
+sap-dev-01, 00, 50013, 50014, 1, ABAP|GATEWAY, GRAY
+EOF
+    else
+        cat <<'EOF'
+hostname, instanceNr, httpPort, httpsPort, startPriority, features, dispstatus
+sap-dev-01, 00, 50013, 50014, 1, ABAP|GATEWAY, GREEN
+EOF
+    fi
+    ;;
+
+# ── GetAlertTree ────────────────────────────────────────────────────────
+GetAlertTree)
+    echo "No alerts configured in mock."
+    ;;
+
+# ── RestartService ──────────────────────────────────────────────────────
+RestartService)
+    echo "RestartService executed successfully on instance $NR."
+    ;;
+
+*)
+    echo "sapcontrol: unknown function '$FUNC'" >&2
+    exit 1
+    ;;
+esac

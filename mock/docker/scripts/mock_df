@@ -1,0 +1,20 @@
+#!/bin/bash
+# Wrapper around df that returns scenario-specific SAP mount data.
+# Replaces /usr/bin/df on the mock container.
+
+SCENARIO="${SAP_SCENARIO:-1}"
+
+if [[ "$SCENARIO" == "2" ]]; then
+    cat <<'EOF'
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1        50G   30G   20G  60% /
+/dev/sdb1       100G   94G    6G  94% /usr/sap/DEV/work
+/dev/sdc1       200G   80G  120G  40% /usr/sap/DEV/data
+EOF
+else
+    cat <<'EOF'
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1        50G   30G   20G  60% /
+/dev/sdb1       100G   45G   55G  45% /usr/sap
+EOF
+fi

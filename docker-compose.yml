@@ -7,5 +7,12 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
 
+  sap-mock:
+    build: mock/docker
+    environment:
+      - SAP_SCENARIO=${SAP_SCENARIO:-1}
+    ports:
+      - "2222:22"
+
 volumes:
   qdrant_data:
