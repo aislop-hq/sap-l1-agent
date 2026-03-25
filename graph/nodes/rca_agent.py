@@ -40,13 +40,23 @@ Host: {host}  SID: {sid}  Instance: {nr}
 == Runbook Matches ==
 {rag_matches}
 
-Respond with ONLY a JSON object (no markdown):
+Respond with ONLY a JSON object (no markdown).
+
+IMPORTANT: "proposed_fix" MUST be exactly one of these values:
+- "restart_workprocess"  → restart the crashed work process via sapcontrol RestartService
+- "cleanup_filesystem"   → remove old trace files (*.old) older than 30 days
+- "rotate_logs"          → rotate current dev_w* logs to .old
+- "escalate"             → escalate to L2 (use when risk is HIGH or fix requires coordination)
+- "None"                 → no system-level fix needed (informational only)
+
+Pick the most appropriate action based on the evidence. Do NOT write free-text descriptions.
+
 {{
   "symptoms": ["<list of observed symptoms>"],
   "root_cause": "<one-sentence root cause>",
   "evidence": ["<list of evidence strings>"],
   "confidence": "high" | "medium" | "low",
-  "proposed_fix": "<specific fix action or 'None' if informational only>",
+  "proposed_fix": "restart_workprocess" | "cleanup_filesystem" | "rotate_logs" | "escalate" | "None",
   "risk_level": "LOW" | "MEDIUM" | "HIGH",
   "sap_note_ref": "<SAP Note number or null>"
 }}
