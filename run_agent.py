@@ -14,15 +14,27 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import uuid
 import sys
 
-from langgraph.types import Command
-from rich.console import Console
-
+# Suppress Langfuse auth warnings before any @observe imports
 from config import settings
-from graph.graph import compiled_graph
-from tools.ssh_tools import set_scenario
+if not settings.langfuse_public_key or not settings.langfuse_secret_key:
+    # Set dummy keys + disabled flag so the SDK doesn't print auth warnings
+    os.environ.setdefault("LANGFUSE_PUBLIC_KEY", "pk-stub")
+    os.environ.setdefault("LANGFUSE_SECRET_KEY", "sk-stub")
+    os.environ.setdefault("LANGFUSE_HOST", "http://localhost:0")
+    os.environ["LANGFUSE_ENABLED"] = "false"
+    # Suppress OpenTelemetry exporter noise when Langfuse is disabled
+    logging.getLogger("opentelemetry").setLevel(logging.CRITICAL)
+
+from langgraph.types import Command  # noqa: E402
+from rich.console import Console  # noqa: E402
+
+from langfuse_init import init_langfuse  # noqa: E402
+from graph.graph import compiled_graph  # noqa: E402
+from tools.ssh_tools import set_scenario  # noqa: E402
 
 console = Console()
 
@@ -57,11 +69,12 @@ def main() -> None:
     if not args.host or not args.sid or not args.alert:
         parser.error("--host, --sid, and --alert are required (or use --scenario)")
 
-    # Configure logging
+    # Configure logging and tracing
     logging.basicConfig(
         level=getattr(logging, settings.log_level, logging.INFO),
         format="%(message)s",
     )
+    init_langfuse()
 
     thread_id = str(uuid.uuid4())
     config = {"configurable": {"thread_id": thread_id}}

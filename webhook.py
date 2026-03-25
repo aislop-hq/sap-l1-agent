@@ -10,22 +10,34 @@ Endpoints:
 from __future__ import annotations
 
 import logging
+import os
 import uuid
 from threading import Thread
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
-from langgraph.types import Command
-from pydantic import BaseModel
-
+# Suppress Langfuse auth warnings before any @observe imports
+import sys as _sys
 from config import settings
-from graph.graph import compiled_graph
-from tools.ssh_tools import set_scenario
+if not settings.langfuse_public_key or not settings.langfuse_secret_key:
+    os.environ.setdefault("LANGFUSE_PUBLIC_KEY", "pk-stub")
+    os.environ.setdefault("LANGFUSE_SECRET_KEY", "sk-stub")
+    os.environ.setdefault("LANGFUSE_HOST", "http://localhost:0")
+    os.environ["LANGFUSE_ENABLED"] = "false"
+    logging.getLogger("opentelemetry").setLevel(logging.CRITICAL)
+
+from fastapi import FastAPI, HTTPException  # noqa: E402
+from langgraph.types import Command  # noqa: E402
+from pydantic import BaseModel  # noqa: E402
+
+from langfuse_init import init_langfuse  # noqa: E402
+from graph.graph import compiled_graph  # noqa: E402
+from tools.ssh_tools import set_scenario  # noqa: E402
 
 logging.basicConfig(
     level=getattr(logging, settings.log_level, logging.INFO),
     format="%(message)s",
 )
+init_langfuse()
 
 app = FastAPI(title="SAP L1 Support Agent", version="1.0.0")
 
