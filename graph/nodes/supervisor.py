@@ -13,7 +13,7 @@ from graph.state import AgentState
 
 logger = logging.getLogger(__name__)
 
-_llm = ChatOpenAI(model="gpt-4o", temperature=0, api_key=settings.openai_api_key)
+_llm = ChatOpenAI(model=settings.openai_model, temperature=0, base_url=settings.openai_base_url, api_key=settings.openai_api_key)
 
 _ROUTING_PROMPT = """\
 You are the Supervisor of an SAP Basis L1 support agent system.

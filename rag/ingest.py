@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from config import settings
 
 RUNBOOKS_DIR = Path(__file__).resolve().parent / "runbooks"
-EMBEDDING_MODEL = "text-embedding-3-small"
+EMBEDDING_MODEL = settings.openai_embedding_model
 EMBEDDING_DIM = 1536
 CHUNK_SIZE = 1500      # characters per chunk (≈375 tokens)
 CHUNK_OVERLAP = 200    # overlap between consecutive chunks
@@ -126,7 +126,7 @@ def ingest(collection: str | None = None, dry_run: bool = False) -> None:
     from qdrant_client import QdrantClient
     from qdrant_client.models import Distance, PointStruct, VectorParams
 
-    oai = OpenAI(api_key=settings.openai_api_key)
+    oai = OpenAI(base_url=settings.openai_base_url, api_key=settings.openai_api_key)
     qdrant = QdrantClient(url=settings.qdrant_url)
 
     # Ensure collection exists

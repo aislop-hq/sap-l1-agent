@@ -47,16 +47,18 @@ cp .env.example .env
 
 Fill in your `.env`:
 
-| Variable | Required for | Notes |
-|----------|-------------|-------|
-| `OPENAI_API_KEY` | RAG + RCA | Used for embeddings and GPT-4o synthesis |
-| `QDRANT_URL` | RAG | Default: `http://localhost:6333` |
+| Variable | Required for | Notes                                                              |
+|----------|-------------|--------------------------------------------------------------------|
+| `OPENAI_API_KEY` | RAG + RCA | Used for embeddings and GPT-4o synthesis                           |
+| `OPENAI_BASE_URL` | RAG + RCA | https://api.openai.com/v1 or custom model endpoint                 |
+| `OPENAI_MODEL` | RAG + RCA | OpenAI model to use 'gpt-4o-mini'                                               |
+| `QDRANT_URL` | RAG | Default: `http://localhost:6333`                                   |
 | `LANGFUSE_PUBLIC_KEY` | Tracing | Get from [Langfuse Cloud](https://cloud.langfuse.com) or self-host |
-| `LANGFUSE_SECRET_KEY` | Tracing | Same as above |
-| `LANGFUSE_HOST` | Tracing | Default: `https://cloud.langfuse.com` |
-| `SSH_DEFAULT_USER` | Real SSH | SAP admin user (e.g., `devadm`) |
-| `SSH_KEY_PATH` | Real SSH | Path to SSH private key |
-| `DEMO_MODE` | — | `true` for mock, `false` for real |
+| `LANGFUSE_SECRET_KEY` | Tracing | Same as above                                                      |
+| `LANGFUSE_HOST` | Tracing | Default: `https://cloud.langfuse.com`                              |
+| `SSH_DEFAULT_USER` | Real SSH | SAP admin user (e.g., `devadm`)                                    |
+| `SSH_KEY_PATH` | Real SSH | Path to SSH private key                                            |
+| `DEMO_MODE` | — | `true` for mock, `false` for real                                  |
 
 ### 3. Ingest runbooks into Qdrant
 

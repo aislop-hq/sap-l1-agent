@@ -16,7 +16,7 @@ from tools.rag_tools import rag_lookup
 
 logger = logging.getLogger(__name__)
 
-_llm = ChatOpenAI(model="gpt-4o", temperature=0, api_key=settings.openai_api_key)
+_llm = ChatOpenAI(model=settings.openai_model, temperature=0, base_url=settings.openai_base_url, api_key=settings.openai_api_key)
 
 _SYNTHESIS_PROMPT = """\
 You are an SAP Basis L1 support analyst. Analyze the evidence below and produce

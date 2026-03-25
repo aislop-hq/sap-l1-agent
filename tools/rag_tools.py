@@ -120,11 +120,11 @@ def rag_lookup(query: str, alert: str = "", top_k: int = 3) -> list[RunbookMatch
         from openai import OpenAI
         from qdrant_client import QdrantClient
 
-        oai = OpenAI(api_key=settings.openai_api_key)
+        oai = OpenAI(base_url=settings.openai_base_url, api_key=settings.openai_api_key)
         qdrant = QdrantClient(url=settings.qdrant_url)
 
         embedding = (
-            oai.embeddings.create(input=query, model="text-embedding-3-small")
+            oai.embeddings.create(input=query, model=settings.openai_embedding_model)
             .data[0]
             .embedding
         )

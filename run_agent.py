@@ -95,7 +95,11 @@ def main() -> None:
     console.print(f"  Host: {args.host}  SID: {args.sid}  NR: {args.nr}")
     console.print(f"  Alert: {args.alert}")
     if settings.demo_mode:
-        console.print("  [dim]DEMO_MODE=true (using mock outputs)[/dim]")
+        console.print("  [dim]Mode: DEMO (all mock, no external deps)[/dim]")
+    elif settings.mock_ssh:
+        console.print("  [dim]Mode: HYBRID (mock SSH, real RAG + LLM + Langfuse)[/dim]")
+    else:
+        console.print("  [dim]Mode: PRODUCTION (real SSH + RAG + LLM)[/dim]")
     console.print()
 
     # Run the graph — it will pause at interrupt() if approval is needed

@@ -15,6 +15,9 @@ load_dotenv()
 class Settings(BaseSettings):
     # OpenAI
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
+    openai_base_url: str = Field(default="", alias="OPENAI_BASE_URL")
+    openai_model: str = Field(default="", alias="OPENAI_MODEL")
+    openai_embedding_model: str = Field(default="text-embedding-ada-002", alias="OPENAI_EMBEDDING_MODEL")
 
     # Langfuse
     langfuse_public_key: str = Field(default="", alias="LANGFUSE_PUBLIC_KEY")
@@ -31,8 +34,10 @@ class Settings(BaseSettings):
     ssh_default_user: str = Field(default="sapsidadm", alias="SSH_DEFAULT_USER")
     ssh_key_path: str = Field(default="~/.ssh/id_rsa", alias="SSH_KEY_PATH")
 
-    # Demo mode
+    # Demo mode — full demo (no external deps), overrides mock_ssh
     demo_mode: bool = Field(default=True, alias="DEMO_MODE")
+    # Mock SSH only — use mock SSH/sapcontrol but real RAG, LLM, Langfuse
+    mock_ssh: bool = Field(default=True, alias="MOCK_SSH")
 
     # Logging
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
@@ -42,6 +47,11 @@ class Settings(BaseSettings):
     @property
     def ssh_key_resolved(self) -> Path:
         return Path(self.ssh_key_path).expanduser()
+
+    @property
+    def use_mock_ssh(self) -> bool:
+        """True when SSH tools should return mock data."""
+        return self.demo_mode or self.mock_ssh
 
 
 settings = Settings()

@@ -70,7 +70,7 @@ def _do_cleanup_filesystem(ssh: SSHClient, sid: str) -> str:
     work_dir = f"/usr/sap/{sid}/work"
     logger.info("[REMEDIATION] Cleaning up old files in %s", work_dir)
 
-    if settings.demo_mode:
+    if settings.use_mock_ssh:
         return (
             f"Cleaned up old trace files in {work_dir}:\n"
             "  Removed dev_w0.old (2.1G)\n"
@@ -89,7 +89,7 @@ def _do_rotate_logs(ssh: SSHClient, sid: str) -> str:
     work_dir = f"/usr/sap/{sid}/work"
     logger.info("[REMEDIATION] Rotating logs in %s", work_dir)
 
-    if settings.demo_mode:
+    if settings.use_mock_ssh:
         return (
             f"Rotated logs in {work_dir}:\n"
             "  dev_w0 → dev_w0.old (120K)\n"

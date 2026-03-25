@@ -53,7 +53,6 @@ class SSHClient:
         logger.info("[SSH] Connected to %s@%s", self.user, self.host)
         return client
 
-    def close(self) -> None:
         if self._client is not None:
             self._client.close()
             self._client = None
@@ -69,7 +68,7 @@ class SSHClient:
         """
         logger.info("[RCA] ssh_run: %s", cmd)
 
-        if settings.demo_mode:
+        if settings.use_mock_ssh:
             output = mock_command(_current_alert, cmd)
             logger.info("[RCA] (mock) returned %d chars", len(output))
             return output
@@ -91,7 +90,7 @@ class SSHClient:
         """
         logger.info("[RCA] read_file: %s", path)
 
-        if settings.demo_mode:
+        if settings.use_mock_ssh:
             output = mock_command(_current_alert, path)
             logger.info("[RCA] (mock) returned %d chars", len(output))
             return output
