@@ -53,6 +53,7 @@ class SSHClient:
         logger.info("[SSH] Connected to %s@%s", self.user, self.host)
         return client
 
+    def close(self) -> None:
         if self._client is not None:
             self._client.close()
             self._client = None
