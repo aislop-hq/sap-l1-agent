@@ -3,6 +3,9 @@ title: Batch Job Failure
 keywords: [batch, job, SM37, background, BTC, BTCTRNS2, failed, cancelled, scheduled, event, batch scheduler]
 sap_note: 1959077
 risk: LOW
+action: none
+fix_command: ""
+verify_command: ""
 ---
 
 # Batch Job Failure

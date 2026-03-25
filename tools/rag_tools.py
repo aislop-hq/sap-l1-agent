@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 from config import settings
@@ -18,6 +18,9 @@ class RunbookMatch:
     content: str
     sap_note: Optional[str]
     score: float
+    action: str = "none"
+    fix_command: str = ""
+    verify_command: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -36,6 +39,9 @@ _DEMO_RESULTS: dict[str, list[RunbookMatch]] = {
             ),
             sap_note="1234567",
             score=0.95,
+            action="restart_workprocess",
+            fix_command="sapcontrol -nr {NR} -function RestartService",
+            verify_command="sapcontrol -nr {NR} -function GetProcessList",
         ),
     ],
     "filesystem": [
@@ -49,6 +55,9 @@ _DEMO_RESULTS: dict[str, list[RunbookMatch]] = {
             ),
             sap_note="2399996",
             score=0.93,
+            action="cleanup_filesystem",
+            fix_command="find /usr/sap/{SID}/work -name '*.old' -mtime +30 -delete",
+            verify_command="df -h /usr/sap/{SID}/work",
         ),
     ],
     "abap_dump": [
@@ -62,6 +71,9 @@ _DEMO_RESULTS: dict[str, list[RunbookMatch]] = {
             ),
             sap_note="1752526",
             score=0.91,
+            action="none",
+            fix_command="",
+            verify_command="",
         ),
     ],
     "instance_down": [
@@ -75,6 +87,9 @@ _DEMO_RESULTS: dict[str, list[RunbookMatch]] = {
             ),
             sap_note="2318837",
             score=0.89,
+            action="escalate",
+            fix_command="",
+            verify_command="",
         ),
     ],
 }
@@ -144,6 +159,9 @@ def rag_lookup(query: str, alert: str = "", top_k: int = 3) -> list[RunbookMatch
                     content=payload.get("content", ""),
                     sap_note=payload.get("sap_note"),
                     score=hit.score,
+                    action=payload.get("action", "none"),
+                    fix_command=payload.get("fix_command", ""),
+                    verify_command=payload.get("verify_command", ""),
                 )
             )
 

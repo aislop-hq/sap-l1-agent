@@ -3,6 +3,9 @@ title: Filesystem Full — Work Directory
 keywords: [filesystem, disk, full, cleanup, rotate, dev_w, trace, df, disk space, /usr/sap, work directory]
 sap_note: 2399996
 risk: MEDIUM
+action: cleanup_filesystem
+fix_command: "find /usr/sap/{SID}/work -name '*.old' -mtime +30 -delete"
+verify_command: "df -h /usr/sap/{SID}/work"
 ---
 
 # Filesystem Full — Work Directory

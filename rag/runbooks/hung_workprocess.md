@@ -3,6 +3,9 @@ title: Hung Work Process
 keywords: [WP, STOPPED, SIGSEGV, RestartService, work process, crash, signal, SM50, dpnpcheck]
 sap_note: 1234567
 risk: LOW
+action: restart_workprocess
+fix_command: "sapcontrol -nr {NR} -function RestartService"
+verify_command: "sapcontrol -nr {NR} -function GetProcessList"
 ---
 
 # Hung Work Process

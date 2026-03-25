@@ -3,6 +3,9 @@ title: Enqueue Lock Issues
 keywords: [enqueue, lock, SM12, ENQUEUE_OVERFLOW, lock table, dequeue, blocking, exclusive lock]
 sap_note: 1potom1
 risk: MEDIUM
+action: escalate
+fix_command: ""
+verify_command: ""
 ---
 
 # Enqueue Lock Issues

@@ -3,6 +3,9 @@ title: Update Process Failure
 keywords: [update, UPD, SM13, update process, V1, V2, failed update, update termination, STOPPED]
 sap_note: 48400
 risk: MEDIUM
+action: restart_workprocess
+fix_command: "sapcontrol -nr {NR} -function RestartService"
+verify_command: "sapcontrol -nr {NR} -function GetProcessList"
 ---
 
 # Update Process Failure

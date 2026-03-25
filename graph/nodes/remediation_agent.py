@@ -1,8 +1,7 @@
-"""Remediation agent node — write actions with human approval."""
+"""Remediation agent node — executes fix commands from runbook-driven RCA."""
 
 from __future__ import annotations
 
-import json
 import logging
 
 from langfuse import observe
@@ -10,7 +9,6 @@ from langfuse import observe
 from config import settings
 from graph.state import AgentState
 from tools.ssh_tools import SSHClient, set_scenario
-from tools import sapcontrol_tools, log_tools
 
 logger = logging.getLogger(__name__)
 
@@ -30,75 +28,40 @@ def remediation_agent_node(state: AgentState) -> dict:
         return {"action_result": "No RCA result — nothing to remediate"}
 
     proposed_fix = rca.get("proposed_fix", "")
+    fix_command = rca.get("fix_command", "")
+    verify_command = rca.get("verify_command", "")
     host = state["host"]
     sid = state["sid"]
     nr = state["instance_nr"]
     alert = state["alert"]
 
+    if not fix_command or proposed_fix in ("none", "None", "escalate", ""):
+        logger.info("[REMEDIATION] No fix command to execute (action=%s)", proposed_fix)
+        return {"action_result": f"No fix command for action: {proposed_fix}"}
+
+    # Substitute placeholders
+    fix_command = _substitute(fix_command, sid=sid, nr=nr, host=host)
+    verify_command = _substitute(verify_command, sid=sid, nr=nr, host=host) if verify_command else ""
+
+    logger.info("[REMEDIATION] Executing: %s", fix_command)
+
     set_scenario(alert)
 
     with SSHClient(host=host) as ssh:
-        if proposed_fix == "restart_workprocess":
-            result = _do_restart_workprocess(ssh, nr)
-        elif proposed_fix == "cleanup_filesystem":
-            result = _do_cleanup_filesystem(ssh, sid)
-        elif proposed_fix == "rotate_logs":
-            result = _do_rotate_logs(ssh, sid)
-        else:
-            logger.info("[REMEDIATION] Unknown fix type: %s", proposed_fix)
-            result = f"No handler for fix type: {proposed_fix}"
-            return {"action_result": result}
+        # Execute fix
+        fix_output = ssh.run_command(fix_command)
+        result = f"Executed: {fix_command}\n{fix_output}"
 
-        # Verify fix
-        logger.info("[REMEDIATION] Verifying fix — re-running GetProcessList")
-        verify = sapcontrol_tools.get_process_list(ssh, nr)
-        verify_summary = json.dumps(verify, indent=2)
-        logger.info("[REMEDIATION] Post-fix process list:\n%s", verify_summary)
+        # Verify if a verify command is defined
+        if verify_command:
+            logger.info("[REMEDIATION] Verifying: %s", verify_command)
+            verify_output = ssh.run_command(verify_command)
+            result += f"\n\nVerification ({verify_command}):\n{verify_output}"
 
-    action_result = f"{result}\n\nVerification (GetProcessList):\n{verify_summary}"
     logger.info("[REMEDIATION] Remediation complete")
-    return {"action_result": action_result}
+    return {"action_result": result}
 
 
-def _do_restart_workprocess(ssh: SSHClient, nr: str) -> str:
-    logger.info("[REMEDIATION] Restarting work process via RestartService")
-    output = sapcontrol_tools.restart_service(ssh, nr)
-    return f"RestartService executed.\n{output}"
-
-
-def _do_cleanup_filesystem(ssh: SSHClient, sid: str) -> str:
-    work_dir = f"/usr/sap/{sid}/work"
-    logger.info("[REMEDIATION] Cleaning up old files in %s", work_dir)
-
-    if settings.use_mock_ssh:
-        return (
-            f"Cleaned up old trace files in {work_dir}:\n"
-            "  Removed dev_w0.old (2.1G)\n"
-            "  Removed dev_w1.old (1.8G)\n"
-            "  Removed dev_w2.old (1.5G)\n"
-            "  Removed dev_disp.old (1.2G)\n"
-            "  Removed dev_rd.old (800M)\n"
-            "  Total freed: 7.4GB"
-        )
-
-    ssh.run_command(f"find {work_dir} -name '*.old' -mtime +30 -delete")
-    return f"Removed *.old files older than 30 days from {work_dir}"
-
-
-def _do_rotate_logs(ssh: SSHClient, sid: str) -> str:
-    work_dir = f"/usr/sap/{sid}/work"
-    logger.info("[REMEDIATION] Rotating logs in %s", work_dir)
-
-    if settings.use_mock_ssh:
-        return (
-            f"Rotated logs in {work_dir}:\n"
-            "  dev_w0 → dev_w0.old (120K)\n"
-            "  dev_w1 → dev_w1.old (80K)\n"
-            "  Logs rotated successfully"
-        )
-
-    ssh.run_command(
-        f"cd {work_dir} && "
-        "for f in dev_w[0-9]; do [ -f \"$f\" ] && mv \"$f\" \"$f.old\"; done"
-    )
-    return f"Rotated dev_w* logs in {work_dir}"
+def _substitute(cmd: str, sid: str, nr: str, host: str) -> str:
+    """Replace {SID}, {NR}, {HOST} placeholders in a command template."""
+    return cmd.replace("{SID}", sid).replace("{NR}", nr).replace("{HOST}", host)

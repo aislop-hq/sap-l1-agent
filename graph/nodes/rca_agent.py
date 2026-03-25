@@ -42,21 +42,21 @@ Host: {host}  SID: {sid}  Instance: {nr}
 
 Respond with ONLY a JSON object (no markdown).
 
-IMPORTANT: "proposed_fix" MUST be exactly one of these values:
-- "restart_workprocess"  → restart the crashed work process via sapcontrol RestartService
-- "cleanup_filesystem"   → remove old trace files (*.old) older than 30 days
-- "rotate_logs"          → rotate current dev_w* logs to .old
-- "escalate"             → escalate to L2 (use when risk is HIGH or fix requires coordination)
-- "None"                 → no system-level fix needed (informational only)
-
-Pick the most appropriate action based on the evidence. Do NOT write free-text descriptions.
+IMPORTANT: Use the runbook match with the highest score to determine the proposed_fix.
+- Copy the "action" value from the best-matching runbook into "proposed_fix"
+- Copy the "fix_command" value from the best-matching runbook into "fix_command"
+- Copy the "verify_command" value from the best-matching runbook into "verify_command"
+- If the best runbook has action "none" or "escalate", use that — do NOT invent a fix.
+- If no runbook matches well, use proposed_fix="none", fix_command="", verify_command=""
 
 {{
   "symptoms": ["<list of observed symptoms>"],
   "root_cause": "<one-sentence root cause>",
   "evidence": ["<list of evidence strings>"],
   "confidence": "high" | "medium" | "low",
-  "proposed_fix": "restart_workprocess" | "cleanup_filesystem" | "rotate_logs" | "escalate" | "None",
+  "proposed_fix": "<action from best-matching runbook>",
+  "fix_command": "<fix_command from best-matching runbook>",
+  "verify_command": "<verify_command from best-matching runbook>",
   "risk_level": "LOW" | "MEDIUM" | "HIGH",
   "sap_note_ref": "<SAP Note number or null>"
 }}
@@ -65,7 +65,6 @@ Pick the most appropriate action based on the evidence. Do NOT write free-text d
 
 def _pick_wp_nr(wp_table: list[dict[str, str]], alert: str) -> int:
     """Determine which work process log to read based on WP table and alert."""
-    # Check for STOPPED / error work processes first
     for wp in wp_table:
         status = wp.get("Status", "").strip()
         if status in ("STOPPED", "Ended"):
@@ -79,7 +78,7 @@ def _pick_wp_nr(wp_table: list[dict[str, str]], alert: str) -> int:
                 return int(wp.get("No", "0").strip())
             except ValueError:
                 continue
-    return 0  # default to dev_w0
+    return 0
 
 
 @observe(name="rca_diagnosis")
@@ -92,40 +91,35 @@ def rca_agent_node(state: AgentState) -> dict:
 
     logger.info("[RCA] Starting diagnosis for alert: %s", alert)
 
-    # Set the mock scenario so all tool calls return the right data
     set_scenario(alert)
 
     with SSHClient(host=host) as ssh:
-        # 1. Get process list
         logger.info("[RCA] Calling sapcontrol GetProcessList")
         proc_list = sapcontrol_tools.get_process_list(ssh, nr)
 
-        # 2. Get work process table
         logger.info("[RCA] Calling sapcontrol ABAPGetWPTable")
         wp_table = sapcontrol_tools.get_wp_table(ssh, nr)
 
-        # 3. Get filesystem usage
         logger.info("[RCA] Calling df -h")
         df_output = log_tools.get_filesystem_usage(ssh)
 
-        # 4. Read relevant dev log
         wp_nr = _pick_wp_nr(wp_table, alert)
         logger.info("[RCA] Reading dev_w%d log", wp_nr)
         dev_log = log_tools.read_dev_log(ssh, sid, nr, wp_nr)
 
-        # 5. RAG lookup
         error_summary = f"{alert} — process list: {json.dumps(proc_list)}"
         logger.info("[RCA] RAG lookup for: %s", alert)
         rag_matches = rag_lookup(error_summary, alert=alert)
 
-    # Format evidence for LLM
+    # Format evidence for LLM — include action/fix_command from runbooks
     rag_text = "\n".join(
-        f"- [{m.score:.2f}] {m.title}: {m.content} (SAP Note {m.sap_note})"
+        f"- [{m.score:.2f}] {m.title}: {m.content} "
+        f"(SAP Note {m.sap_note}, action={m.action}, "
+        f"fix_command=\"{m.fix_command}\", verify_command=\"{m.verify_command}\")"
         for m in rag_matches
     )
 
     if settings.demo_mode:
-        # Build RCAResult deterministically for demo
         rca = _build_demo_rca(alert, wp_table, dev_log, df_output, rag_matches)
     else:
         prompt = _SYNTHESIS_PROMPT.format(
@@ -161,6 +155,8 @@ def _build_demo_rca(
     alert_lower = alert.lower()
 
     sap_note = rag_matches[0].sap_note if rag_matches else None
+    # Pull action/commands from best RAG match
+    best = rag_matches[0] if rag_matches else None
 
     if "wp" in alert_lower or "work proc" in alert_lower:
         return RCAResult(
@@ -171,7 +167,9 @@ def _build_demo_rca(
                 "dev_w2: SIGSEGV caught in Z_CUSTOM_FM (program SAPLZ_CUSTOM)",
             ],
             confidence="high",
-            proposed_fix="restart_workprocess",
+            proposed_fix=best.action if best else "restart_workprocess",
+            fix_command=best.fix_command if best else "sapcontrol -nr {NR} -function RestartService",
+            verify_command=best.verify_command if best else "sapcontrol -nr {NR} -function GetProcessList",
             risk_level="LOW",
             sap_note_ref=sap_note,
         )
@@ -185,7 +183,9 @@ def _build_demo_rca(
                 "ls -lh: dev_w*.old files from 30+ days ago totalling 8.2GB",
             ],
             confidence="high",
-            proposed_fix="cleanup_filesystem",
+            proposed_fix=best.action if best else "cleanup_filesystem",
+            fix_command=best.fix_command if best else "find /usr/sap/{SID}/work -name '*.old' -mtime +30 -delete",
+            verify_command=best.verify_command if best else "df -h /usr/sap/{SID}/work",
             risk_level="MEDIUM",
             sap_note_ref=sap_note,
         )
@@ -199,7 +199,9 @@ def _build_demo_rca(
                 "Long running SELECT on table VBAK without proper WHERE clause",
             ],
             confidence="high",
-            proposed_fix="None",
+            proposed_fix="none",
+            fix_command="",
+            verify_command="",
             risk_level="LOW",
             sap_note_ref=sap_note,
         )
@@ -214,17 +216,20 @@ def _build_demo_rca(
             ],
             confidence="high",
             proposed_fix="escalate",
+            fix_command="",
+            verify_command="",
             risk_level="HIGH",
             sap_note_ref=sap_note,
         )
 
-    # Fallback
     return RCAResult(
         symptoms=["Unknown alert pattern"],
         root_cause=f"Unable to determine root cause for: {alert}",
         evidence=[],
         confidence="low",
-        proposed_fix="None",
+        proposed_fix="none",
+        fix_command="",
+        verify_command="",
         risk_level="LOW",
         sap_note_ref=None,
     )

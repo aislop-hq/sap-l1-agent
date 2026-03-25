@@ -3,6 +3,9 @@ title: ABAP Dump — TIME_OUT
 keywords: [TIME_OUT, ABAP, dump, runtime, long-running, SELECT, ST22, short dump, ZREPORT, checkpoint, batch]
 sap_note: 1752526
 risk: LOW
+action: none
+fix_command: ""
+verify_command: ""
 ---
 
 # ABAP Dump — TIME_OUT

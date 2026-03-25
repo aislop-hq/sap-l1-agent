@@ -3,6 +3,9 @@ title: Instance Down — Full Outage
 keywords: [instance, down, GRAY, dispatcher, stopped, start, outage, StartService, GetSystemInstanceList, crash]
 sap_note: 2318837
 risk: HIGH
+action: escalate
+fix_command: ""
+verify_command: ""
 ---
 
 # Instance Down — Full Outage

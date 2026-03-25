@@ -11,6 +11,8 @@ class RCAResult(TypedDict):
     evidence: list[str]
     confidence: Literal["high", "medium", "low"]
     proposed_fix: str
+    fix_command: Optional[str]
+    verify_command: Optional[str]
     risk_level: Literal["LOW", "MEDIUM", "HIGH"]
     sap_note_ref: Optional[str]
 

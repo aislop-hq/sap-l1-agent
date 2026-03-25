@@ -3,6 +3,9 @@ title: Memory Issues — Extended Memory and Heap
 keywords: [memory, PRIV, extended memory, heap, em/initial_size, abap/heap_area_total, STORAGE_PARAMETERS_WRONG_SET, OOM, swap]
 sap_note: 146289
 risk: MEDIUM
+action: escalate
+fix_command: ""
+verify_command: ""
 ---
 
 # Memory Issues — Extended Memory and Heap

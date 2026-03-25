@@ -39,6 +39,8 @@ def human_approval_node(state: AgentState) -> dict:
         table.add_row("Root Cause", rca.get("root_cause", "N/A"))
         table.add_row("Confidence", rca.get("confidence", "N/A"))
         table.add_row("Proposed Fix", rca.get("proposed_fix", "N/A"))
+        if rca.get("fix_command"):
+            table.add_row("Fix Command", rca.get("fix_command", ""))
         table.add_row("Risk Level", rca.get("risk_level", "N/A"))
         table.add_row("SAP Note", rca.get("sap_note_ref") or "N/A")
 

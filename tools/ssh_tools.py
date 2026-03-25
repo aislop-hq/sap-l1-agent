@@ -76,11 +76,9 @@ class SSHClient:
             return output
 
         client = self._connect()
-        _, stdout, stderr = client.exec_command(cmd)
+        _, stdout, stderr = client.exec_command(cmd, timeout=30)
+        stdout.channel.set_combine_stderr(True)
         out = stdout.read().decode()
-        err = stderr.read().decode()
-        if err:
-            logger.warning("[SSH] stderr from %s: %s", cmd, err.strip())
         return out
 
     def read_file(self, path: str) -> str:

@@ -54,8 +54,8 @@ def supervisor_node(state: AgentState) -> dict:
         if risk == "HIGH":
             logger.info("[SUPERVISOR] Risk HIGH → routing to report (escalation)")
             return {"next": "report"}
-        if not proposed_fix or proposed_fix.lower() in ("none", "n/a", ""):
-            logger.info("[SUPERVISOR] No fix proposed → routing to report")
+        if not proposed_fix or proposed_fix.lower() in ("none", "n/a", "", "escalate"):
+            logger.info("[SUPERVISOR] No fix / escalation → routing to report")
             return {"next": "report"}
         logger.info("[SUPERVISOR] Fix proposed → routing to human_approval")
         return {"next": "human_approval"}

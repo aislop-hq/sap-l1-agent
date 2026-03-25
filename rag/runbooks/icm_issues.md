@@ -3,6 +3,9 @@ title: ICM / Web Dispatcher Issues
 keywords: [ICM, HTTP, HTTPS, web dispatcher, SMICM, port, connection refused, 503, 500, SSL, certificate]
 sap_note: 1201898
 risk: MEDIUM
+action: restart_icm
+fix_command: "sapcontrol -nr {NR} -function RestartService"
+verify_command: "sapcontrol -nr {NR} -function GetProcessList"
 ---
 
 # ICM / Web Dispatcher Issues
