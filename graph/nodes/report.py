@@ -120,8 +120,8 @@ def _print_report(report: IncidentReport) -> None:
     if report["action_result"]:
         # Truncate long action results for display
         result_text = report["action_result"]
-        if len(result_text) > 200:
-            result_text = result_text[:200] + "..."
+        if len(result_text) > 500:
+            result_text = result_text[:500] + "..."
         table.add_row("Action Result", result_text)
 
     table.add_row("Resolved", str(report["resolved"]))
