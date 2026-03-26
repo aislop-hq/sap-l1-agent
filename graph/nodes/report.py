@@ -57,17 +57,16 @@ def report_node(state: AgentState) -> dict:
         escalate=escalate,
     )
 
-    # Log Langfuse score for operator approval
-    if decision is not None:
-        try:
-            client = get_client()
-            client.score(
-                trace_id=state.get("thread_id", ""),
-                name="operator_approval",
-                value=1 if decision == "yes" else 0,
-            )
-        except Exception:
-            pass  # Langfuse may not be configured
+    # Log Langfuse scores
+    try:
+        client = get_client()
+        thread_id = state.get("thread_id", "")
+        if decision is not None:
+            client.score(trace_id=thread_id, name="operator_approval", value=1 if decision == "yes" else 0)
+        client.score(trace_id=thread_id, name="resolved", value=1 if resolved else 0)
+        client.score(trace_id=thread_id, name="escalated", value=1 if escalate else 0)
+    except Exception:
+        pass  # Langfuse may not be configured
 
     # Print report
     _print_report(report)

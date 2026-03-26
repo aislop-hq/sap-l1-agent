@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 
 from langchain_openai import ChatOpenAI
-from langfuse import observe
+from langfuse import observe, get_client
 from langfuse.langchain import CallbackHandler as LangfuseCallbackHandler
 
 from config import settings
@@ -49,6 +50,7 @@ def rca_agent_node(state: AgentState) -> dict:
     alert = state["alert"]
 
     logger.info("[RCA] Starting diagnosis for alert: %s", alert)
+    t_start = time.monotonic()
 
     set_scenario(alert)
 
@@ -100,6 +102,19 @@ def rca_agent_node(state: AgentState) -> dict:
             rca = _build_demo_rca(alert, wp_table, dev_log, df_output, rag_matches)
 
     logger.info("[RCA] Diagnosis complete — root cause: %s", rca.get("root_cause", "?"))
+
+    # Log Langfuse scores
+    mttd_seconds = time.monotonic() - t_start
+    best_rag_score = rag_matches[0].score if rag_matches else 0.0
+    try:
+        client = get_client()
+        thread_id = state.get("thread_id", "")
+        client.score(trace_id=thread_id, name="mttd_seconds", value=round(mttd_seconds, 2))
+        client.score(trace_id=thread_id, name="rag_relevance", value=round(best_rag_score, 3))
+        client.score(trace_id=thread_id, name="rca_confidence", value={"high": 1.0, "medium": 0.5, "low": 0.0}.get(rca.get("confidence", "low"), 0.0))
+    except Exception:
+        pass  # Langfuse may not be configured
+
     return {"rca_result": rca}
 
 
