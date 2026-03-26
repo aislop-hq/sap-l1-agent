@@ -14,55 +14,12 @@ from graph.state import AgentState, RCAResult
 from tools.ssh_tools import SSHClient, set_scenario
 from tools import sapcontrol_tools, log_tools
 from tools.rag_tools import rag_lookup
+from prompts import get_prompt_text
 
 logger = logging.getLogger(__name__)
 
 _llm = ChatOpenAI(model=settings.openai_model, temperature=0, base_url=settings.openai_base_url, api_key=settings.openai_api_key)
 _langfuse_handler = LangfuseCallbackHandler()
-
-_SYNTHESIS_PROMPT = """\
-You are an SAP Basis L1 support analyst. Analyze the evidence below and produce
-a root-cause analysis.
-
-Alert: {alert}
-Host: {host}  SID: {sid}  Instance: {nr}
-
-== Process List ==
-{process_list}
-
-== Work Process Table ==
-{wp_table}
-
-== Filesystem Usage ==
-{df_output}
-
-== Dev Log ==
-{dev_log}
-
-== Runbook Matches ==
-{rag_matches}
-
-Respond with ONLY a JSON object (no markdown).
-
-IMPORTANT: Use the runbook match with the highest score to determine the proposed_fix.
-- Copy the "action" value from the best-matching runbook into "proposed_fix"
-- Copy the "fix_command" value from the best-matching runbook into "fix_command"
-- Copy the "verify_command" value from the best-matching runbook into "verify_command"
-- If the best runbook has action "none" or "escalate", use that — do NOT invent a fix.
-- If no runbook matches well, use proposed_fix="none", fix_command="", verify_command=""
-
-{{
-  "symptoms": ["<list of observed symptoms>"],
-  "root_cause": "<one-sentence root cause>",
-  "evidence": ["<list of evidence strings>"],
-  "confidence": "high" | "medium" | "low",
-  "proposed_fix": "<action from best-matching runbook>",
-  "fix_command": "<fix_command from best-matching runbook>",
-  "verify_command": "<verify_command from best-matching runbook>",
-  "risk_level": "LOW" | "MEDIUM" | "HIGH",
-  "sap_note_ref": "<SAP Note number or null>"
-}}
-"""
 
 
 def _pick_wp_nr(wp_table: list[dict[str, str]], alert: str) -> int:
@@ -124,17 +81,17 @@ def rca_agent_node(state: AgentState) -> dict:
     if settings.demo_mode:
         rca = _build_demo_rca(alert, wp_table, dev_log, df_output, rag_matches)
     else:
-        prompt = _SYNTHESIS_PROMPT.format(
-            alert=alert,
-            host=host,
-            sid=sid,
-            nr=nr,
-            process_list=json.dumps(proc_list, indent=2),
-            wp_table=json.dumps(wp_table, indent=2),
-            df_output=df_output,
-            dev_log=dev_log,
-            rag_matches=rag_text,
-        )
+        prompt = get_prompt_text("rca_synthesis", {
+            "alert": alert,
+            "host": host,
+            "sid": sid,
+            "nr": nr,
+            "process_list": json.dumps(proc_list, indent=2),
+            "wp_table": json.dumps(wp_table, indent=2),
+            "df_output": df_output,
+            "dev_log": dev_log,
+            "rag_matches": rag_text,
+        })
         response = _llm.invoke(prompt, config={"callbacks": [_langfuse_handler]})
         try:
             rca = json.loads(response.content)

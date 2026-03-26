@@ -11,28 +11,12 @@ from langfuse.langchain import CallbackHandler as LangfuseCallbackHandler
 
 from config import settings
 from graph.state import AgentState
+from prompts import get_prompt_text
 
 logger = logging.getLogger(__name__)
 
 _llm = ChatOpenAI(model=settings.openai_model, temperature=0, base_url=settings.openai_base_url, api_key=settings.openai_api_key)
 _langfuse_handler = LangfuseCallbackHandler()
-
-_ROUTING_PROMPT = """\
-You are the Supervisor of an SAP Basis L1 support agent system.
-
-Current state:
-- Alert: {alert}
-- RCA completed: {rca_done}
-- RCA result: {rca_summary}
-
-Decide the next step. Respond with ONLY a JSON object (no markdown):
-{{"next": "<target>", "reason": "<short reason>"}}
-
-Possible targets:
-- "rca_agent"        → run root-cause analysis (use when RCA has not been done yet)
-- "human_approval"   → ask operator to approve a fix (use when RCA found a fixable issue with proposed_fix)
-- "report"           → go straight to report (use when RCA is informational-only OR the issue requires escalation, i.e. risk_level is HIGH)
-"""
 
 
 @observe(name="supervisor_route")
@@ -63,11 +47,11 @@ def supervisor_node(state: AgentState) -> dict:
         return {"next": "human_approval"}
 
     # Production: use LLM to decide
-    prompt = _ROUTING_PROMPT.format(
-        alert=state["alert"],
-        rca_done=rca_done,
-        rca_summary=rca_summary,
-    )
+    prompt = get_prompt_text("supervisor_routing", {
+        "alert": state["alert"],
+        "rca_done": str(rca_done),
+        "rca_summary": rca_summary,
+    })
 
     response = _llm.invoke(prompt, config={"callbacks": [_langfuse_handler]})
     try:
