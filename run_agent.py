@@ -32,6 +32,7 @@ if not settings.langfuse_public_key or not settings.langfuse_secret_key:
 from langgraph.types import Command  # noqa: E402
 from rich.console import Console  # noqa: E402
 
+from langfuse import observe  # noqa: E402
 from langfuse_init import init_langfuse  # noqa: E402
 from graph.graph import compiled_graph  # noqa: E402
 from tools.ssh_tools import set_scenario  # noqa: E402
@@ -102,13 +103,19 @@ def main() -> None:
         console.print("  [dim]Mode: PRODUCTION (real SSH + RAG + LLM)[/dim]")
     console.print()
 
-    # Run the graph — it will pause at interrupt() if approval is needed
+    # Run the graph wrapped in a parent Langfuse trace
+    _run_with_trace(thread_id, initial_state, config)
+
+    console.print("\n[bold blue]Agent complete.[/bold blue]")
+
+
+@observe(name="sap_incident")
+def _run_with_trace(thread_id: str, initial_state: dict, config: dict) -> None:
+    """Execute the graph inside a parent Langfuse trace so all spans nest."""
     result = compiled_graph.invoke(initial_state, config)
 
-    # Check if the graph paused at the approval gate
     state = compiled_graph.get_state(config)
     while state.next:
-        # Graph is paused — prompt for approval
         console.print()
         try:
             answer = console.input("[bold yellow]Approve? [yes/no]: [/bold yellow]").strip().lower()
@@ -118,11 +125,8 @@ def main() -> None:
 
         decision = "yes" if answer in ("yes", "y") else "no"
 
-        # Resume the graph with the operator's decision
         result = compiled_graph.invoke(Command(resume=decision), config)
         state = compiled_graph.get_state(config)
-
-    console.print("\n[bold blue]Agent complete.[/bold blue]")
 
 
 if __name__ == "__main__":

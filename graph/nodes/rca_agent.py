@@ -7,6 +7,7 @@ import logging
 
 from langchain_openai import ChatOpenAI
 from langfuse import observe
+from langfuse.langchain import CallbackHandler as LangfuseCallbackHandler
 
 from config import settings
 from graph.state import AgentState, RCAResult
@@ -17,6 +18,7 @@ from tools.rag_tools import rag_lookup
 logger = logging.getLogger(__name__)
 
 _llm = ChatOpenAI(model=settings.openai_model, temperature=0, base_url=settings.openai_base_url, api_key=settings.openai_api_key)
+_langfuse_handler = LangfuseCallbackHandler()
 
 _SYNTHESIS_PROMPT = """\
 You are an SAP Basis L1 support analyst. Analyze the evidence below and produce
@@ -133,7 +135,7 @@ def rca_agent_node(state: AgentState) -> dict:
             dev_log=dev_log,
             rag_matches=rag_text,
         )
-        response = _llm.invoke(prompt)
+        response = _llm.invoke(prompt, config={"callbacks": [_langfuse_handler]})
         try:
             rca = json.loads(response.content)
         except json.JSONDecodeError:

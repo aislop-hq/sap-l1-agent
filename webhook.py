@@ -29,6 +29,7 @@ from fastapi import FastAPI, HTTPException  # noqa: E402
 from langgraph.types import Command  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 
+from langfuse import observe  # noqa: E402
 from langfuse_init import init_langfuse  # noqa: E402
 from graph.graph import compiled_graph  # noqa: E402
 from tools.ssh_tools import set_scenario  # noqa: E402
@@ -90,6 +91,7 @@ def create_alert(req: AlertRequest) -> AlertResponse:
         "messages": [],
     }
 
+    @observe(name="sap_incident")
     def _run() -> None:
         set_scenario(req.alert)
         compiled_graph.invoke(initial_state, config)

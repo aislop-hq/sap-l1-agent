@@ -7,6 +7,7 @@ import logging
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, END
 from langgraph.types import interrupt
+from langfuse import observe
 
 from rich.console import Console
 from rich.panel import Panel
@@ -31,39 +32,11 @@ def human_approval_node(state: AgentState) -> dict:
     rca = state.get("rca_result")
 
     if rca:
-        # Print a formatted approval box
-        table = Table(show_header=False, box=None, padding=(0, 2))
-        table.add_column("Field", style="bold cyan", width=16)
-        table.add_column("Value")
+        _display_approval_panel(rca)
 
-        table.add_row("Root Cause", rca.get("root_cause", "N/A"))
-        table.add_row("Confidence", rca.get("confidence", "N/A"))
-        table.add_row("Proposed Fix", rca.get("proposed_fix", "N/A"))
-        if rca.get("fix_command"):
-            table.add_row("Fix Command", rca.get("fix_command", ""))
-        table.add_row("Risk Level", rca.get("risk_level", "N/A"))
-        table.add_row("SAP Note", rca.get("sap_note_ref") or "N/A")
-
-        symptoms = rca.get("symptoms", [])
-        if symptoms:
-            table.add_row("Symptoms", symptoms[0])
-            for s in symptoms[1:]:
-                table.add_row("", s)
-
-        evidence = rca.get("evidence", [])
-        if evidence:
-            table.add_row("Evidence", evidence[0])
-            for e in evidence[1:]:
-                table.add_row("", e)
-
-        console.print()
-        console.print(Panel(
-            table,
-            title="[bold yellow]Approval Required[/bold yellow]",
-            border_style="yellow",
-        ))
-
-    # Pause the graph and wait for human input
+    # Pause the graph — interrupt() raises internally on first call,
+    # then returns the resume value on second call. Not wrapped in
+    # @observe because the interrupt exception would show as an error.
     decision = interrupt({
         "rca": rca,
         "proposed_fix": rca.get("proposed_fix", "") if rca else "",
@@ -72,7 +45,49 @@ def human_approval_node(state: AgentState) -> dict:
     })
 
     logger.info("[SUPERVISOR] Human approval decision: %s", decision)
+    _log_approval(decision)
     return {"approval_decision": decision}
+
+
+@observe(name="human_approval_display")
+def _display_approval_panel(rca: dict) -> None:
+    """Render the approval panel (traced as a clean Langfuse span)."""
+    table = Table(show_header=False, box=None, padding=(0, 2))
+    table.add_column("Field", style="bold cyan", width=16)
+    table.add_column("Value")
+
+    table.add_row("Root Cause", rca.get("root_cause", "N/A"))
+    table.add_row("Confidence", rca.get("confidence", "N/A"))
+    table.add_row("Proposed Fix", rca.get("proposed_fix", "N/A"))
+    if rca.get("fix_command"):
+        table.add_row("Fix Command", rca.get("fix_command", ""))
+    table.add_row("Risk Level", rca.get("risk_level", "N/A"))
+    table.add_row("SAP Note", rca.get("sap_note_ref") or "N/A")
+
+    symptoms = rca.get("symptoms", [])
+    if symptoms:
+        table.add_row("Symptoms", symptoms[0])
+        for s in symptoms[1:]:
+            table.add_row("", s)
+
+    evidence = rca.get("evidence", [])
+    if evidence:
+        table.add_row("Evidence", evidence[0])
+        for e in evidence[1:]:
+            table.add_row("", e)
+
+    console.print()
+    console.print(Panel(
+        table,
+        title="[bold yellow]Approval Required[/bold yellow]",
+        border_style="yellow",
+    ))
+
+
+@observe(name="human_approval_decision")
+def _log_approval(decision: str) -> None:
+    """Log the operator's decision as a traced span."""
+    logger.info("[SUPERVISOR] Approval recorded: %s", decision)
 
 
 # ---------------------------------------------------------------------------

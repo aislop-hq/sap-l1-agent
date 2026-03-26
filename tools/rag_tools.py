@@ -6,6 +6,8 @@ import logging
 from dataclasses import dataclass, field
 from typing import Optional
 
+from langfuse import observe
+
 from config import settings
 from mock.mock_ssh import select_scenario
 
@@ -120,6 +122,7 @@ def _demo_lookup(alert: str) -> list[RunbookMatch]:
 # Public API
 # ---------------------------------------------------------------------------
 
+@observe(name="rag_lookup")
 def rag_lookup(query: str, alert: str = "", top_k: int = 3) -> list[RunbookMatch]:
     """Search SAP runbooks for content related to *query*.
 

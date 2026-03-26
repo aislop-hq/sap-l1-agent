@@ -7,6 +7,7 @@ import logging
 
 from langchain_openai import ChatOpenAI
 from langfuse import observe
+from langfuse.langchain import CallbackHandler as LangfuseCallbackHandler
 
 from config import settings
 from graph.state import AgentState
@@ -14,6 +15,7 @@ from graph.state import AgentState
 logger = logging.getLogger(__name__)
 
 _llm = ChatOpenAI(model=settings.openai_model, temperature=0, base_url=settings.openai_base_url, api_key=settings.openai_api_key)
+_langfuse_handler = LangfuseCallbackHandler()
 
 _ROUTING_PROMPT = """\
 You are the Supervisor of an SAP Basis L1 support agent system.
@@ -67,7 +69,7 @@ def supervisor_node(state: AgentState) -> dict:
         rca_summary=rca_summary,
     )
 
-    response = _llm.invoke(prompt)
+    response = _llm.invoke(prompt, config={"callbacks": [_langfuse_handler]})
     try:
         decision = json.loads(response.content)
         next_node = decision["next"]
