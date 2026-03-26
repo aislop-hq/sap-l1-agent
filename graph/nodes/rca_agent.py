@@ -108,10 +108,9 @@ def rca_agent_node(state: AgentState) -> dict:
     best_rag_score = rag_matches[0].score if rag_matches else 0.0
     try:
         client = get_client()
-        thread_id = state.get("thread_id", "")
-        client.score(trace_id=thread_id, name="mttd_seconds", value=round(mttd_seconds, 2))
-        client.score(trace_id=thread_id, name="rag_relevance", value=round(best_rag_score, 3))
-        client.score(trace_id=thread_id, name="rca_confidence", value={"high": 1.0, "medium": 0.5, "low": 0.0}.get(rca.get("confidence", "low"), 0.0))
+        client.score_current_trace(name="mttd_seconds", value=round(mttd_seconds, 2))
+        client.score_current_trace(name="rag_relevance", value=round(best_rag_score, 3))
+        client.score_current_trace(name="rca_confidence", value={"high": 1.0, "medium": 0.5, "low": 0.0}.get(rca.get("confidence", "low"), 0.0))
     except Exception:
         pass  # Langfuse may not be configured
 
