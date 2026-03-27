@@ -13,6 +13,8 @@ services:
       - SAP_SCENARIO=${SAP_SCENARIO:-1}
     ports:
       - "2222:22"
+    volumes:
+      - ./.ssh-keys:/ssh-keys
 
 volumes:
   qdrant_data:

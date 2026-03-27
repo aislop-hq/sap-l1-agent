@@ -12,10 +12,8 @@ RUN useradd -m -s /bin/bash devadm
 RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config && \
     sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config
 
-# Set up authorized key for devadm
-RUN mkdir -p /home/devadm/.ssh && chmod 700 /home/devadm/.ssh
-COPY ssh/id_ed25519.pub /home/devadm/.ssh/authorized_keys
-RUN chmod 600 /home/devadm/.ssh/authorized_keys && \
+# Prepare SSH directory for devadm (keys are generated at container start)
+RUN mkdir -p /home/devadm/.ssh && chmod 700 /home/devadm/.ssh && \
     chown -R devadm:devadm /home/devadm/.ssh
 
 # Install mock sapcontrol and df
@@ -42,6 +40,12 @@ CMD /bin/bash -c '\
     echo "PermitUserEnvironment yes" >> /etc/ssh/sshd_config && \
     echo "SAP_SCENARIO=$SAP_SCENARIO" > /home/devadm/.ssh/environment && \
     chown devadm:devadm /home/devadm/.ssh/environment && \
+    # Generate ephemeral SSH key pair — private key shared via volume, public key stays in container \
+    ssh-keygen -t ed25519 -f /home/devadm/.ssh/id_ed25519 -N "" -q && \
+    cp /home/devadm/.ssh/id_ed25519.pub /home/devadm/.ssh/authorized_keys && \
+    cp /home/devadm/.ssh/id_ed25519 /ssh-keys/id_ed25519 && \
+    chmod 600 /home/devadm/.ssh/authorized_keys /ssh-keys/id_ed25519 && \
+    chown -R devadm:devadm /home/devadm/.ssh && \
     /usr/local/bin/setup_files.sh && \
     echo "[sap-mock] Ready — scenario $SAP_SCENARIO, SSH on port 22" && \
     exec /usr/sbin/sshd -D'

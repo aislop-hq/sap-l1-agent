@@ -32,7 +32,7 @@ class Settings(BaseSettings):
 
     # SSH
     ssh_default_user: str = Field(default="sapsidadm", alias="SSH_DEFAULT_USER")
-    ssh_key_path: str = Field(default="~/.ssh/id_rsa", alias="SSH_KEY_PATH")
+    ssh_key_path: str = Field(default=".ssh-keys/id_ed25519", alias="SSH_KEY_PATH")
     ssh_port: int = Field(default=22, alias="SSH_PORT")
 
     # Demo mode — full demo (no external deps), overrides mock_ssh
