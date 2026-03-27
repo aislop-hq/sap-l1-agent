@@ -1,5 +1,7 @@
 # SAP Basis L1 Support Agent
 
+![teaser.png](teaser.png)
+
 Multi-agent system that diagnoses SAP Basis incidents via SSH + sapcontrol
 and proposes (or executes with human approval) remediation actions.
 
@@ -72,7 +74,7 @@ Run the real ingest (requires `OPENAI_API_KEY`):
 python rag/ingest.py
 ```
 
-This embeds 9 runbooks (70 chunks) into Qdrant using `text-embedding-3-small`.
+This embeds 9 runbooks (70 chunks) into Qdrant using `text-embedding-ada-002`.
 
 ### 4. Run with real RAG (still using mock SSH)
 
