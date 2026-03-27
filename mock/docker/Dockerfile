@@ -41,6 +41,7 @@ CMD /bin/bash -c '\
     echo "SAP_SCENARIO=$SAP_SCENARIO" > /home/devadm/.ssh/environment && \
     chown devadm:devadm /home/devadm/.ssh/environment && \
     # Generate ephemeral SSH key pair — private key shared via volume, public key stays in container \
+    rm -f /home/devadm/.ssh/id_ed25519 /home/devadm/.ssh/id_ed25519.pub && \
     ssh-keygen -t ed25519 -f /home/devadm/.ssh/id_ed25519 -N "" -q && \
     cp /home/devadm/.ssh/id_ed25519.pub /home/devadm/.ssh/authorized_keys && \
     cp /home/devadm/.ssh/id_ed25519 /ssh-keys/id_ed25519 && \
