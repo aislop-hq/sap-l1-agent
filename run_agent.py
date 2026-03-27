@@ -32,7 +32,7 @@ if not settings.langfuse_public_key or not settings.langfuse_secret_key:
 from langgraph.types import Command  # noqa: E402
 from rich.console import Console  # noqa: E402
 
-from langfuse import observe  # noqa: E402
+from langfuse import observe, get_client  # noqa: E402
 from langfuse_init import init_langfuse  # noqa: E402
 from graph.graph import compiled_graph  # noqa: E402
 from tools.ssh_tools import set_scenario  # noqa: E402
@@ -107,6 +107,12 @@ def main() -> None:
     _run_with_trace(thread_id, initial_state, config)
 
     console.print("\n[bold blue]Agent complete.[/bold blue]")
+
+    # Flush Langfuse to ensure all traces and scores are exported before exit
+    try:
+        get_client().flush()
+    except Exception:
+        pass
 
 
 @observe(name="sap_incident")

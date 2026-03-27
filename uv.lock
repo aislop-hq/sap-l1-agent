@@ -797,20 +797,20 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "fastapi", specifier = ">=0.110.0" },
-    { name = "langchain", specifier = ">=0.2.0" },
-    { name = "langchain-openai", specifier = ">=0.1.0" },
-    { name = "langchain-qdrant", specifier = ">=0.1.0" },
-    { name = "langfuse", specifier = ">=2.0.0" },
-    { name = "langgraph", specifier = ">=0.2" },
-    { name = "paramiko", specifier = ">=3.4.0" },
-    { name = "pydantic", specifier = ">=2.6.0" },
-    { name = "pydantic-settings", specifier = ">=2.0.0" },
-    { name = "python-dotenv", specifier = ">=1.0.0" },
+    { name = "fastapi", specifier = ">=0.129.0" },
+    { name = "langchain", specifier = ">=1.2.0" },
+    { name = "langchain-openai", specifier = ">=1.1.0" },
+    { name = "langchain-qdrant", specifier = ">=1.1.0" },
+    { name = "langfuse", specifier = ">=4.0.0" },
+    { name = "langgraph", specifier = ">=1.1.0" },
+    { name = "paramiko", specifier = ">=4.0.0" },
+    { name = "pydantic", specifier = ">=2.12.0" },
+    { name = "pydantic-settings", specifier = ">=2.12.0" },
+    { name = "python-dotenv", specifier = ">=1.2.0" },
     { name = "pyyaml", specifier = ">=6.0" },
-    { name = "qdrant-client", specifier = ">=1.9.0" },
-    { name = "rich", specifier = ">=13.7.0" },
-    { name = "uvicorn", specifier = ">=0.29.0" },
+    { name = "qdrant-client", specifier = ">=1.16.0" },
+    { name = "rich", specifier = ">=14.0.0" },
+    { name = "uvicorn", specifier = ">=0.40.0" },
 ]
 
 [[package]]
