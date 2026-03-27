@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     openai_base_url: str = Field(default="", alias="OPENAI_BASE_URL")
     openai_model: str = Field(default="", alias="OPENAI_MODEL")
     openai_embedding_model: str = Field(default="text-embedding-ada-002", alias="OPENAI_EMBEDDING_MODEL")
+    openai_embedding_dim: int = Field(default=1536, alias="OPENAI_EMBEDDING_DIM")
+    openai_embedding_chunk_size: int = Field(default=1500, alias="OPENAI_EMBEDDING_CHUNK_SIZE")
+    openai_embedding_chunk_overlap: int = Field(default=200, alias="OPENAI_EMBEDDING_CHUNK_OVERLAP")
 
     # Langfuse
     langfuse_public_key: str = Field(default="", alias="LANGFUSE_PUBLIC_KEY")

@@ -26,9 +26,9 @@ from config import settings
 
 RUNBOOKS_DIR = Path(__file__).resolve().parent / "runbooks"
 EMBEDDING_MODEL = settings.openai_embedding_model
-EMBEDDING_DIM = 1536
-CHUNK_SIZE = 1500      # characters per chunk (≈375 tokens)
-CHUNK_OVERLAP = 200    # overlap between consecutive chunks
+EMBEDDING_DIM = settings.openai_embedding_dim
+CHUNK_SIZE = settings.openai_embedding_chunk_size      # characters per chunk (≈375 tokens)
+CHUNK_OVERLAP = settings.openai_embedding_chunk_overlap    # overlap between consecutive chunks
 
 
 def parse_frontmatter(text: str) -> tuple[dict, str]:
@@ -132,8 +132,16 @@ def ingest(collection: str | None = None, dry_run: bool = False) -> None:
     oai = OpenAI(base_url=settings.openai_base_url, api_key=settings.openai_api_key)
     qdrant = QdrantClient(url=settings.qdrant_url)
 
-    # Ensure collection exists
+    # Ensure collection exists with the correct vector dimension
     collections = [c.name for c in qdrant.get_collections().collections]
+    if collection in collections:
+        info = qdrant.get_collection(collection)
+        existing_dim = info.config.params.vectors.size
+        if existing_dim != EMBEDDING_DIM:
+            print(f"Collection '{collection}' has dim={existing_dim}, need {EMBEDDING_DIM} — recreating")
+            qdrant.delete_collection(collection)
+            collections.remove(collection)
+
     if collection not in collections:
         qdrant.create_collection(
             collection_name=collection,
